@@ -16,9 +16,6 @@ local config = {
     enabled = false
 }
 
--- =====================
--- NEXLIB UI
--- =====================
 local t = {accentclr = Color3.fromRGB(128, 213, 247), dropdownframes = {}, colorpickerframes = {}}
 
 local D = Instance.new("ScreenGui")
@@ -55,7 +52,6 @@ local function makeDraggable(dragPart, frame)
     end)
 end
 
--- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = D
@@ -76,7 +72,6 @@ MainOutline.ImageColor3 = Color3.fromRGB(60, 60, 60)
 MainOutline.ScaleType = Enum.ScaleType.Slice
 MainOutline.SliceCenter = Rect.new(2, 2, 62, 62)
 
--- Top Bar
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
 TopBar.Parent = MainFrame
@@ -113,7 +108,6 @@ end)()
 
 makeDraggable(TopBar, MainFrame)
 
--- Section Frame
 local SectionFrame = Instance.new("Frame")
 SectionFrame.Parent = MainFrame
 SectionFrame.AnchorPoint = Vector2.new(0.5, 0)
@@ -161,7 +155,6 @@ ItemLayout.Parent = ItemHolder
 ItemLayout.SortOrder = Enum.SortOrder.LayoutOrder
 ItemLayout.Padding = UDim.new(0, 8)
 
--- Toggle
 local function makeToggle(parent, labelText, default, callback)
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Parent = parent
@@ -229,7 +222,6 @@ local function makeToggle(parent, labelText, default, callback)
     end)()
 end
 
--- Textbox
 local function makeTextbox(parent, labelText, placeholder, callback)
     local container = Instance.new("Frame")
     container.Parent = parent
@@ -283,7 +275,6 @@ local function makeTextbox(parent, labelText, placeholder, callback)
     end)
 end
 
--- Build UI elements
 makeToggle(ItemHolder, "Enable Name Hider", false, function(state)
     config.enabled = state
 end)
@@ -296,7 +287,6 @@ makeTextbox(ItemHolder, "Enemy Name:", "Enter enemy fake name", function(text)
     config.enemyName = text
 end)
 
--- Keybind P to toggle
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.P then
@@ -310,6 +300,7 @@ end)
 RunService.RenderStepped:Connect(function()
     if not config.enabled then return end
 
+    -- Overhead nametags
     for _, player in ipairs(Players:GetPlayers()) do
         local char = player.Character
         if char then
@@ -354,21 +345,53 @@ RunService.RenderStepped:Connect(function()
         end
     end
 
+    -- DuelInterface scoreboard
     local mainGui = PlayerGui:FindFirstChild("MainGui")
-    if not mainGui then return end
-    local mainFrame = mainGui:FindFirstChild("MainFrame")
-    if not mainFrame then return end
-    local duelInterfaces = mainFrame:FindFirstChild("DuelInterfaces")
-    if not duelInterfaces then return end
-    local duelInterface = duelInterfaces:FindFirstChild("DuelInterface")
-    if not duelInterface then return end
+    if mainGui then
+        local mainFrame = mainGui:FindFirstChild("MainFrame")
+        if mainFrame then
+            local duelInterfaces = mainFrame:FindFirstChild("DuelInterfaces")
+            if duelInterfaces then
+                local duelInterface = duelInterfaces:FindFirstChild("DuelInterface")
+                if duelInterface then
+                    for _, v in ipairs(duelInterface:GetDescendants()) do
+                        if v:IsA("TextLabel") and v.Name == "Username" then
+                            if string.find(v.Text, "@" .. LocalPlayer.Name) then
+                                v.Text = "@" .. config.myName
+                            else
+                                v.Text = "@" .. config.enemyName
+                            end
+                        end
+                    end
+                end
+            end
+        end
 
-    for _, v in ipairs(duelInterface:GetDescendants()) do
-        if v:IsA("TextLabel") and v.Name == "Username" then
-            if string.find(v.Text, "@" .. LocalPlayer.Name) then
-                v.Text = "@" .. config.myName
-            else
-                v.Text = "@" .. config.enemyName
+        -- Tab list / PlayerList
+        local playerList = mainGui:FindFirstChild("PlayerList")
+        if playerList then
+            for _, v in ipairs(playerList:GetDescendants()) do
+                if v:IsA("TextLabel") and v.Name == "Username" then
+                    if string.find(v.Text, "@" .. LocalPlayer.Name) then
+                        v.Text = "@" .. config.myName
+                    else
+                        v.Text = "@" .. config.enemyName
+                    end
+                end
+            end
+        end
+    end
+
+    -- Leaderboard
+    local leaderboardGui = PlayerGui:FindFirstChild("LeaderboardGui")
+    if leaderboardGui then
+        for _, v in ipairs(leaderboardGui:GetDescendants()) do
+            if v:IsA("TextLabel") and v.Name == "Username" then
+                if string.find(v.Text, "@" .. LocalPlayer.Name) then
+                    v.Text = "@" .. config.myName
+                else
+                    v.Text = "@" .. config.enemyName
+                end
             end
         end
     end
