@@ -720,9 +720,9 @@ else
 
   print("@cpplibrary - Profiles HUD loaded successfully.")
 
-  queue_on_teleport([[
+ queue_on_teleport([[
     loadstring(game:HttpGet("https://raw.githubusercontent.com/3097830987/OK/refs/heads/main/namehider.lua"))() -- Auto Execute
-  ]])
+]])
   return
 end
 
