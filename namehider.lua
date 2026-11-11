@@ -3,7 +3,26 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 
 local P, UIS = game:GetService("Players"), game:GetService("UserInputService")
 local me = P.LocalPlayer
-local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Misc"):WaitForChild("RequestProfile")
+local RS = game:GetService("ReplicatedStorage")
+local remote
+for _ = 1, 30 do
+	remote = RS:FindFirstChild("RequestProfile", true)
+	if remote then break end
+	task.wait(0.5)
+end
+if not remote then
+	warn("[HUD] RequestProfile not found in ReplicatedStorage")
+	for _, v in ipairs(RS:GetDescendants()) do
+		if v:IsA("RemoteFunction") or v:IsA("RemoteEvent") then print("[HUD] remote:", v:GetFullName()) end
+	end
+	_G.PH = nil
+	return
+end
+if not remote:IsA("RemoteFunction") then
+	warn("[HUD] RequestProfile is a " .. remote.ClassName .. ", not a RemoteFunction")
+	_G.PH = nil
+	return
+end
 local hidden = { [me.Name] = true } -- add names: hidden["Name"] = true
 
 local colors = {
