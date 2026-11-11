@@ -3,7 +3,7 @@ if not game:IsLoaded() then game.Loaded:Wait() end
 
 local P, UIS = game:GetService("Players"), game:GetService("UserInputService")
 local me = P.LocalPlayer
-local remote = game.ReplicatedStorage.Remotes.Misc.RequestProfile
+local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Misc"):WaitForChild("RequestProfile")
 local hidden = { [me.Name] = true } -- add names: hidden["Name"] = true
 
 local colors = {
