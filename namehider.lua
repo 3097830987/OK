@@ -1,4 +1,6 @@
 -- Rank HUD for Matcha (Drawing library, no Instance.new)
+print("[HUD] v2 matcha script running")
+print("[HUD] globals  Drawing:", Drawing ~= nil, " Vector2:", Vector2 ~= nil, " Color3:", Color3 ~= nil, " Instance:", Instance ~= nil)
 local P = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local me = P.LocalPlayer
@@ -72,6 +74,7 @@ while true do
 	for i, p in ipairs(list) do
 		local t = texts[p]
 		if not t then
+			print("[HUD] step: Drawing.new")
 			t = Drawing.new("Text")
 			t.Size, t.Outline, t.Visible = 16, true, true
 			texts[p] = t
@@ -79,6 +82,7 @@ while true do
 		local d = data[p] or { name = "...", base = "Unranked" }
 		t.Text = p.Name .. "  " .. d.name
 		t.Color = colors[d.base]
+		print("[HUD] step: Vector2.new")
 		t.Position = Vector2.new(20, 200 + (i - 1) * 18)
 	end
 	wait(1)
