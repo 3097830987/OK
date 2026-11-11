@@ -1,37 +1,16 @@
 if _G.PH then return end _G.PH = true
 if not game:IsLoaded() then game.Loaded:Wait() end
 
-local P, UIS = game:GetService("Players"), game:GetService("UserInputService")
+local P, RS = game:GetService("Players"), game:GetService("ReplicatedStorage")
 local me = P.LocalPlayer
-local RS = game:GetService("ReplicatedStorage")
-local remote
-for _ = 1, 30 do
-	remote = RS:FindFirstChild("RequestProfile", true)
-	if remote then break end
-	task.wait(0.5)
-end
-if not remote then
-	warn("[HUD] RequestProfile not found in ReplicatedStorage")
-	for _, v in ipairs(RS:GetDescendants()) do
-		if v:IsA("RemoteFunction") or v:IsA("RemoteEvent") then print("[HUD] remote:", v:GetFullName()) end
-	end
-	_G.PH = nil
-	return
-end
-if not remote:IsA("RemoteFunction") then
-	warn("[HUD] RequestProfile is a " .. remote.ClassName .. ", not a RemoteFunction")
-	_G.PH = nil
-	return
-end
-local hidden = { [me.Name] = true } -- add names: hidden["Name"] = true
+local hidden = { [me.Name] = true } -- hidden["Name"] = true
 
 local colors = {
 	Unranked = "#ffffff", Bronze = "#CD7F32", Silver = "#C0C0C0", Gold = "#FFD700",
-	Platinum = "#00fbff", Diamond = "#3573e6", Onyx = "#41315e",
-	Nemesis = "#b700ff", Archnemesis = "#1900ff",
+	Platinum = "#00fbff", Diamond = "#3573e6", Onyx = "#8a6fd1",
+	Nemesis = "#b700ff", Archnemesis = "#4d4dff",
 }
 
--- Bronze 1 ... Onyx 3 (18 tiers, 200 ELO each)
 local tiers = {}
 for _, r in ipairs({ "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Onyx" }) do
 	for i = 1, 3 do tiers[#tiers + 1] = r .. " " .. i end
@@ -43,64 +22,72 @@ local function rank(e)
 	return n, n:match("%a+")
 end
 
-local function pct(n) return type(n) == "number" and n >= 0 and ("%.1f%%"):format(n * 100) or "N/A" end
+-- find the profile remote
+local remote
+for _ = 1, 30 do
+	for _, v in ipairs(RS:GetDescendants()) do
+		if v:IsA("RemoteFunction") and v.Name:find("RequestProfile", 1, true) then
+			remote = v
+			break
+		end
+	end
+	if remote then break end
+	task.wait(0.5)
+end
+if not remote then
+	warn("[HUD] RequestProfile RemoteFunction not found. Anything profile-like:")
+	for _, v in ipairs(RS:GetDescendants()) do
+		if v.Name:lower():find("profile", 1, true) then print(v.ClassName, v:GetFullName()) end
+	end
+	_G.PH = nil
+	return
+end
+print("[HUD] using remote:", remote.ClassName, remote:GetFullName())
 
 -- UI
 local gui = Instance.new("ScreenGui")
-gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = "ProfilesHUD", false, 999999
+gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = "RankHUD", false, 999999
 gui.Parent = me:WaitForChild("PlayerGui")
 
-local list = Instance.new("ScrollingFrame")
-list.Size, list.Position = UDim2.new(0, 280, 0, 400), UDim2.new(1, -295, 0, 200)
-list.BackgroundColor3, list.BackgroundTransparency, list.BorderSizePixel = Color3.fromRGB(15, 15, 15), 0.1, 0
-list.ScrollBarThickness, list.AutomaticCanvasSize, list.CanvasSize = 3, Enum.AutomaticSize.Y, UDim2.new()
-list.Parent = gui
-Instance.new("UICorner", list).CornerRadius = UDim.new(0, 12)
+local list = Instance.new("Frame")
+list.Size, list.Position = UDim2.new(0, 200, 0, 0), UDim2.new(1, -215, 0, 200)
+list.AutomaticSize, list.BackgroundColor3, list.BackgroundTransparency = Enum.AutomaticSize.Y, Color3.fromRGB(15, 15, 15), 0.15
+list.BorderSizePixel, list.Parent = 0, gui
+Instance.new("UICorner", list).CornerRadius = UDim.new(0, 8)
 local layout = Instance.new("UIListLayout", list)
-layout.Padding, layout.SortOrder = UDim.new(0, 4), Enum.SortOrder.LayoutOrder
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-UIS.InputBegan:Connect(function(i, gp)
-	if not gp and i.KeyCode == Enum.KeyCode.F3 then gui.Enabled = not gui.Enabled end
-end)
+local rows = {}
 
--- Cards
-local cards, n = {}, 0
-
-local function addPlayer(p)
+local function add(p)
 	if hidden[p.Name] then return end
-	local c = Instance.new("TextLabel")
-	c.Size, c.BackgroundColor3, c.BorderSizePixel = UDim2.new(1, -8, 0, 62), Color3.fromRGB(25, 25, 25), 0
-	c.Font, c.TextSize, c.RichText, c.TextWrapped = Enum.Font.GothamMedium, 12, true, true
-	c.TextXAlignment, c.TextYAlignment, c.TextColor3 = Enum.TextXAlignment.Left, Enum.TextYAlignment.Top, Color3.fromRGB(200, 200, 200)
-	c.Text, c.LayoutOrder, c.Parent = "<b>" .. p.Name .. "</b>\nLoading...", 9999, list
-	Instance.new("UICorner", c).CornerRadius = UDim.new(0, 8)
-	cards[p] = c
+	local l = Instance.new("TextLabel")
+	l.Size, l.BackgroundTransparency, l.RichText = UDim2.new(1, 0, 0, 20), 1, true
+	l.Font, l.TextSize, l.TextColor3 = Enum.Font.GothamBold, 12, Color3.new(1, 1, 1)
+	l.TextXAlignment, l.LayoutOrder = Enum.TextXAlignment.Left, 9999
+	l.Text, l.Parent = " " .. p.Name .. "  ...", list
+	rows[p] = l
 
-	n += 1
 	task.spawn(function()
-		task.wait(n * 0.1) -- stagger requests
-		for _ = 1, 20 do
+		for i = 1, 10 do
 			if not p.Parent then return end
 			local ok, d = pcall(remote.InvokeServer, remote, p)
-			if ok and type(d) == "table" and d.Level then
+			if ok and type(d) == "table" then
 				local elo = d.RankedCurrentELO or 0
 				local name, base = rank(elo)
-				local w = {}
-				for i = 1, 4 do w[i] = d.FavoriteWeapons and d.FavoriteWeapons[i] and d.FavoriteWeapons[i].Name or "N/A" end
-				c.Text = ("<b>%s</b>  <font color='%s'>%s</font>\nLvl %s | ELO %s\nCasual %s • Ranked %s\n%s"):format(
-					p.Name, colors[base], name, d.Level, elo, pct(d.CasualWinPercent), pct(d.RankedWinPercent), table.concat(w, " • "))
-				c.Size = UDim2.new(1, -8, 0, 78)
-				c.LayoutOrder = -elo -- highest ELO on top
+				l.Text = (" %s  <font color='%s'>%s</font>"):format(p.Name, colors[base], name)
+				l.LayoutOrder = -elo
 				return
 			end
-			task.wait(8)
+			if i == 1 then warn("[HUD] fetch failed for " .. p.Name .. ":", ok and type(d) or d) end
+			task.wait(5)
 		end
-		c.Text = p.Name .. "\nN/A"
+		l.Text = " " .. p.Name .. "  N/A"
 	end)
 end
 
-for _, p in ipairs(P:GetPlayers()) do addPlayer(p) end
-P.PlayerAdded:Connect(addPlayer)
+for _, p in ipairs(P:GetPlayers()) do task.spawn(add, p) task.wait(0.15) end
+P.PlayerAdded:Connect(add)
 P.PlayerRemoving:Connect(function(p)
-	if cards[p] then cards[p]:Destroy() cards[p] = nil end
+	if rows[p] then rows[p]:Destroy() rows[p] = nil end
 end)
